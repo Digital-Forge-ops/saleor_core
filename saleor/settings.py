@@ -826,10 +826,14 @@ def SENTRY_INIT(dsn: str, sentry_opts: dict):
         "user_email",
     ]
 
+    # Allow opting in to sending PII via environment variable. Default is False
+    # to avoid leaking personal data in development environments.
+    send_default_pii = get_bool_from_env("SENTRY_SEND_DEFAULT_PII", False)
+
     sentry_sdk.init(
         dsn,
         release=__version__,
-        send_default_pii=False,
+        send_default_pii=send_default_pii,
         event_scrubber=EventScrubber(
             denylist=SALEOR_DENYLIST, pii_denylist=SALEOR_PII_DENYLIST
         ),
@@ -837,6 +841,27 @@ def SENTRY_INIT(dsn: str, sentry_opts: dict):
     )
     ignore_logger("graphql.execution.utils")
     ignore_logger("graphql.execution.executor")
+
+
+# Initialize Sentry from the environment if a DSN is provided. This keeps the
+# repository free of secrets and allows runtime configuration via env vars.
+if SENTRY_DSN:
+    # make explicit dict type to satisfy static type checkers
+    _sentry_opts: dict = dict(SENTRY_OPTS)
+
+    traces_rate = os.environ.get("SENTRY_TRACES_SAMPLE_RATE")
+    if traces_rate:
+        try:
+            _sentry_opts["traces_sample_rate"] = float(traces_rate)
+        except ValueError:
+            _sentry_opts["traces_sample_rate"] = 0.0
+
+    sentry_env = os.environ.get("SENTRY_ENVIRONMENT") or os.environ.get("ENVIRONMENT")
+    if sentry_env:
+        _sentry_opts["environment"] = sentry_env
+
+    # Call the SENTRY_INIT helper defined above
+    SENTRY_INIT(SENTRY_DSN, _sentry_opts)
 
 
 GRAPHQL_PAGINATION_LIMIT = 100
