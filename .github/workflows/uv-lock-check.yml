@@ -39,11 +39,38 @@ jobs:
             docker run --rm -v "$GITHUB_WORKSPACE:/app" -w /app uv-helper:0.8 /bin/uv lock > uv.lock.new || true
             echo "--- DIFF: uv.lock (repo) vs uv.lock.new (generated) ---"
             if command -v diff >/dev/null 2>&1; then
-              diff -u uv.lock uv.lock.new || true
+              diff -u uv.lock uv.lock.new > uv.lock.diff || true
             else
               # fallback to showing head of generated lock
-              head -n 200 uv.lock.new || true
+              head -n 200 uv.lock.new > uv.lock.diff || true
             fi
             echo "\nERROR: uv.lock is not in sync with pyproject.toml. Run 'uv lock' and include the updated uv.lock in your PR."
+            # keep the diff file for the next step to post as a comment
             exit 1
           fi
+
+      - name: Post diff as PR comment
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request && context.payload.pull_request.number;
+            if (!pr) {
+              core.info('No pull_request found in context; skipping comment');
+              return;
+            }
+            let diff = '';
+            try {
+              diff = fs.readFileSync('uv.lock.diff', 'utf8');
+            } catch (e) {
+              try { diff = fs.readFileSync('uv.lock.new', 'utf8').slice(0, 4000); } catch (e) { diff = '' }
+            }
+            if (!diff) diff = 'Diff is empty or too large to display. Run `uv lock` locally to generate the full lock.';
+            const body = "### uv.lock out of sync\nThe generated lock differs from the committed `uv.lock`. Please run `uv lock` and include the updated lock in this PR.\n\n<details><summary>Generated diff</summary>\n\n```diff\n" + diff.slice(0, 30000) + "\n```\n</details>";
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: pr,
+              body: body,
+            });
