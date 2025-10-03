@@ -26,12 +26,24 @@ jobs:
           DOCKERFILE
           docker build -f docker-uv-helper.Dockerfile -t uv-helper:0.8 .
 
-      - name: Run uv lock --check
+      - name: Run uv lock --check and show diff on failure
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/app" -w /app uv-helper:0.8 /bin/uv lock --check
-
-      - name: Show uv.lock diff (for debugging)
-        if: failure()
-        run: |
-          echo '--- uv.lock ---'
-          sed -n '1,200p' uv.lock || true
+          set -euo pipefail
+          echo "Running uv lock --check"
+          if docker run --rm -v "$GITHUB_WORKSPACE:/app" -w /app uv-helper:0.8 /bin/uv lock --check; then
+            echo "uv.lock is up to date"
+            exit 0
+          else
+            echo "uv.lock is out of date — generating a new lock to show diff"
+            # generate a fresh lockfile for diffing
+            docker run --rm -v "$GITHUB_WORKSPACE:/app" -w /app uv-helper:0.8 /bin/uv lock > uv.lock.new || true
+            echo "--- DIFF: uv.lock (repo) vs uv.lock.new (generated) ---"
+            if command -v diff >/dev/null 2>&1; then
+              diff -u uv.lock uv.lock.new || true
+            else
+              # fallback to showing head of generated lock
+              head -n 200 uv.lock.new || true
+            fi
+            echo "\nERROR: uv.lock is not in sync with pyproject.toml. Run 'uv lock' and include the updated uv.lock in your PR."
+            exit 1
+          fi
