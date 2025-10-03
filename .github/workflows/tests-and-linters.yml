@@ -80,13 +80,14 @@ jobs:
             -n logical
 
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() }} # Run even if tests fail
+        if: ${{ !cancelled() && secrets.CODECOV_TOKEN != '' }} # Run only when token is set
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       # Publish coverage and test results
       - uses: codecov/codecov-action@v5
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

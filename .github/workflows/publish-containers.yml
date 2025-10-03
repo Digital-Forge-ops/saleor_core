@@ -189,6 +189,7 @@ jobs:
             ./.github/workflows/notify
 
       - name: Notify Slack
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         env:
           JOB_STATUS: ${{ job.status }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
