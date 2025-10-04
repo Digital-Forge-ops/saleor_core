@@ -11,6 +11,7 @@ import dj_database_url
 import dj_email_url
 import django_cache_url
 import django_stubs_ext
+import corsheaders  # noqa: F401 - referenced by Django via strings in INSTALLED_APPS/MIDDLEWARE
 import sentry_sdk
 import sentry_sdk.utils
 from celery.schedules import crontab
