@@ -174,7 +174,7 @@ jobs:
 
   notify:
     if: ${{ failure() }}
-    needs: build-and-push
+    needs: merge-digests
     runs-on: ubuntu-24.04
 
     permissions:
@@ -189,11 +189,11 @@ jobs:
             ./.github/workflows/notify
 
       - name: Notify Slack
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         env:
           JOB_STATUS: ${{ job.status }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_MENTION_GROUP_ID: ${{ secrets.SLACK_MENTION_GROUP_ID }}
-          JOB_TITLE: "Build of Saleor Core ${{ steps.meta.outputs.version }}"
+          JOB_TITLE: "Build of Saleor Core ${{ needs.merge-digests.outputs.version }}"
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         run: |
           python3 ./.github/workflows/notify/notify-slack.py
