@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.views import serve
-from django.urls import re_path, path
+from django.urls import re_path
 from django.views.decorators.csrf import csrf_exempt
 
 from .core.views import jwks
@@ -15,13 +15,7 @@ from .plugins.views import (
 from .product.views import digital_product
 from .thumbnail.views import handle_thumbnail
 
-def trigger_error(request):
-    division_by_zero = 1 / 0
-
-
 urlpatterns = [
-    # User-provided Sentry test endpoint
-    path("sentry-debug/", trigger_error),
     re_path(
         r"^graphql/$",
         csrf_exempt(GraphQLView.as_view(backend=backend, schema=schema)),
