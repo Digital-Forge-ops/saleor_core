@@ -334,7 +334,8 @@ if ENABLE_DJANGO_EXTENSIONS:
         "django_extensions",
     ]
 
-CORS_ALLOWED_ORIGINS = ["https://saleor-dashboard-h4q4.onrender.com"]
+CORS_ALLOWED_ORIGINS = get_list(
+     os.environ.get("CORS_ALLOWED_ORIGINS", PUBLIC_URL or "")
 # Make the `logging` Python module capture `warnings.warn()` calls
 # This is needed in order to log them as JSON when DEBUG=False
 logging.captureWarnings(True)
