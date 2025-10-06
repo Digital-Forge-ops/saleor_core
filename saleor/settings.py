@@ -335,7 +335,8 @@ if ENABLE_DJANGO_EXTENSIONS:
     ]
 
 CORS_ALLOWED_ORIGINS = get_list(
-     os.environ.get("CORS_ALLOWED_ORIGINS", PUBLIC_URL or ""))
+    os.environ.get("CORS_ALLOWED_ORIGINS", PUBLIC_URL or "")
+)
 # Make the `logging` Python module capture `warnings.warn()` calls
 # This is needed in order to log them as JSON when DEBUG=False
 logging.captureWarnings(True)
